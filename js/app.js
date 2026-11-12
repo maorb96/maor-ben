@@ -25,6 +25,24 @@ function pick(catIds){
   return choice;
 }
 
+/* ideas (dates and cooking) are remembered separately, so they don't repeat either */
+const IDEA_KEY = 'maor-ben-ideas-v1';
+let seenIdeas = new Set();
+try { seenIdeas = new Set(JSON.parse(localStorage.getItem(IDEA_KEY) || '[]')); } catch (e) {}
+
+function pickIdea(box, currentKey){
+  const pool = box.items.map((it, i) => ({...it, key:box.id + ':' + i}));
+  let fresh = pool.filter(p => !seenIdeas.has(p.key) && p.key !== currentKey);
+  if (!fresh.length) {
+    pool.forEach(p => seenIdeas.delete(p.key));
+    fresh = pool.filter(p => p.key !== currentKey);
+  }
+  const choice = fresh[Math.floor(Math.random() * fresh.length)];
+  seenIdeas.add(choice.key);
+  try { localStorage.setItem(IDEA_KEY, JSON.stringify([...seenIdeas])); } catch (e) {}
+  return choice;
+}
+
 const state = { mode:null, cats:null, stage:0, step:0, turn:0, current:null };
 const app = document.getElementById('app');
 
@@ -32,6 +50,8 @@ function home(){
   state.mode = null; state.current = null;
   const cats = CATS.filter(c => !c.hidden).map(c =>
     `<button class="cat" data-cat="${c.id}" type="button"><b>${c.name}</b><small>${c.hint}</small></button>`).join('');
+  const ideas = IDEAS.map((c, i) =>
+    `<button class="cat${i === IDEAS.length - 1 ? ' wide' : ''}" data-idea="${c.id}" type="button"><b>${c.name}</b><small>${c.hint}</small></button>`).join('');
   app.innerHTML = `
   <section class="view">
     <header>
@@ -52,10 +72,58 @@ function home(){
         <button class="cat wide" data-cat="all" type="button"><b>הפתעה</b><small>שאלה מכל הנושאים</small></button>
       </div>
     </div>
+    <div>
+      <h2 class="section-title">או לתכנן ערב</h2>
+      <div class="cats">
+        ${ideas}
+      </div>
+    </div>
     <div class="foot">השאלות לא חוזרות על עצמן עד שנגמר הנושא</div>
   </section>`;
   document.getElementById('startRitual').onclick = intro;
   app.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => startFree(b.dataset.cat));
+  app.querySelectorAll('[data-idea]').forEach(b => b.onclick = () => idea(b.dataset.idea));
+}
+
+function idea(id, currentKey){
+  state.mode = null; state.current = null;
+  const box = IDEAS.find(c => c.id === id);
+  const it = pickIdea(box, currentKey);
+  app.innerHTML = `
+  <section class="view">
+    <div class="topbar"><button class="link" id="back" type="button">→ בית</button></div>
+    <div class="qzone">
+      <span class="tag">${box.name}</span>
+      <p class="question">${it.t}</p>
+      <p class="idea-text">${it.d}</p>
+      <div class="turn"><span class="dot"></span><span>${it.tag}</span></div>
+      ${id === 'cook' ? '<p class="idea-note">הכל בלי חלב. בקנייה כדאי לבדוק רכיבים בלחם, בשוקולד ובפירורי לחם.</p>' : ''}
+    </div>
+    <div class="actions">
+      <button class="btn ghost" id="skip" type="button">רעיון אחר</button>
+      <button class="btn primary" id="done" type="button">סגרנו ←</button>
+    </div>
+  </section>`;
+  document.getElementById('back').onclick = home;
+  document.getElementById('skip').onclick = () => idea(id, it.key);
+  document.getElementById('done').onclick = ideaDone;
+}
+
+function ideaDone(){
+  app.innerHTML = `
+  <section class="view">
+    <div class="end">
+      <div class="eyebrow">סגרנו</div>
+      <h2>שיהיה ערב<br>מדליק</h2>
+      <p>תיהנו. ואם בא לכם, אפשר לסגור את הערב עם שאלה אחת.</p>
+    </div>
+    <div class="actions">
+      <button class="btn ghost" id="more" type="button">שאלה אחת לסיום</button>
+      <button class="btn primary" id="home" type="button">חזרה להתחלה</button>
+    </div>
+  </section>`;
+  document.getElementById('home').onclick = home;
+  document.getElementById('more').onclick = () => startFree('all');
 }
 
 function intro(){

@@ -79,6 +79,8 @@ h1 .amp{color:var(--ember);font-weight:500}
 .turn{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:16px}
 .turn .dot{width:10px;height:10px;border-radius:50%;background:var(--ember);box-shadow:0 0 10px var(--ember);flex:none}
 .turn b{color:var(--text)}
+.idea-text{color:var(--muted);font-size:18px;line-height:1.6;margin:0;max-width:40ch}
+.idea-note{color:var(--muted);font-size:13px;margin:0;opacity:.85}
 
 .actions{display:flex;gap:10px;margin-top:auto}
 .btn{all:unset;box-sizing:border-box;cursor:pointer;text-align:center;padding:15px 18px;border-radius:14px;font-weight:700;font-size:17px;transition:transform .15s,background .2s}
